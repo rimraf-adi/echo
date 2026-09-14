@@ -8,6 +8,8 @@
 
 Echo is a dedicated codebase state tracker and history DAG designed specifically for autonomous AI agent workflows. It provides automatic checkpointing, Merkle tree content verification, content-addressable zlib-compressed blob storage, full-text indexing, and deterministic rollbacks — completely independent of Git.
 
+> **AI Agent Specification**: Refer to [AGENTS.md](AGENTS.md) for machine installation instructions, non-interactive execution loops, and programmatic JSON contracts for autonomous agents.
+
 ---
 
 ## Motivation
@@ -221,9 +223,10 @@ project/
 
 ## Documentation
 
-Detailed architectural designs, formal specifications, and testing strategies are maintained in the [`docs/`](docs/) directory:
+Detailed architectural designs, formal specifications, and testing strategies are maintained in the repository:
 
-- [`01-prd.md`](docs/01-prd.md): Product Requirements Document
+- [`AGENTS.md`](AGENTS.md): Machine installation, non-interactive workflows, and programmatic JSON contracts for autonomous AI agents
+- [`docs/01-prd.md`](docs/01-prd.md): Product Requirements Document
 - [`02-architecture.md`](docs/02-architecture.md): Object Model, Binary Format, and SQLite Schema
 - [`03-cli-spec.md`](docs/03-cli-spec.md): CLI Command Specifications and Flag Definitions
 - [`04-project-structure.md`](docs/04-project-structure.md): Package Layout and Architecture Boundaries
