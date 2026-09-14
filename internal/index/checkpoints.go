@@ -3,10 +3,12 @@ package index
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/echo-vcs/echo/internal/core"
+	"github.com/echo-vcs/echo/internal/merkle"
 )
 
 // CheckpointRecord represents indexed checkpoint metadata
@@ -159,5 +161,38 @@ func (s *sqlNullString) Scan(value any) error {
 		s.String = string(v)
 		s.Valid = true
 	}
+	return nil
+}
+
+// IndexWorkspaceCheckpoint updates the SQLite index, files metadata, and content search for a newly created checkpoint.
+func IndexWorkspaceCheckpoint(ws *core.Workspace, cp *core.Checkpoint) error {
+	if cp == nil {
+		return nil
+	}
+	dbPath := filepath.Join(ws.EchoDir, "index.db")
+	idx, err := OpenIndex(dbPath)
+	if err != nil {
+		return err
+	}
+	defer idx.Close()
+
+	_ = idx.IndexCheckpoint(cp)
+	treeData, rerr := ws.Store.ReadTree(cp.TreeHash)
+	if rerr == nil {
+		if treeNode, terr := merkle.DeserializeTree(treeData); terr == nil {
+			if files, ferr := merkle.FlattenTree(treeNode, ws.Store); ferr == nil {
+				_ = idx.IndexFiles(cp.ID, files)
+				for _, p := range append(cp.Changeset.Added, cp.Changeset.Modified...) {
+					if entry, ok := files[p]; ok {
+						if blob, berr := ws.Store.ReadBlob(entry.Hash); berr == nil {
+							_ = idx.IndexContent(cp.ID, p, string(blob))
+						}
+					}
+				}
+			}
+		}
+	}
+	headBranch, _ := core.ReadHead(ws)
+	_ = idx.SetRef(headBranch, cp.ID)
 	return nil
 }

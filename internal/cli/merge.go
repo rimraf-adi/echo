@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/echo-vcs/echo/internal/core"
+	"github.com/echo-vcs/echo/internal/index"
 	"github.com/echo-vcs/echo/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -30,9 +31,22 @@ var mergeCmd = &cobra.Command{
 			strat = core.StrategyOurs
 		}
 
+		if !mergeDryRun {
+			// Safety check: auto-save uncommitted changes before merging
+			if cp, _ := core.AutoCheckpointIfDirty(ws, fmt.Sprintf("auto-save before merge %s", branchName), "safety-guard"); cp != nil {
+				_ = index.IndexWorkspaceCheckpoint(ws, cp)
+			}
+		}
+
 		res, err := core.Merge(ws, branchName, strat, mergeDryRun)
 		if err != nil {
 			HandleError(err)
+		}
+
+		if res.MergeCheckpoint != "" {
+			if mcp, err := core.LoadCheckpoint(ws, res.MergeCheckpoint); err == nil {
+				_ = index.IndexWorkspaceCheckpoint(ws, mcp)
+			}
 		}
 
 		if FlagJSON {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/echo-vcs/echo/internal/core"
+	"github.com/echo-vcs/echo/internal/index"
 	"github.com/echo-vcs/echo/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -52,6 +53,11 @@ var switchCmd = &cobra.Command{
 		}
 
 		name := args[0]
+		// Safety check: auto-save uncommitted changes before switching
+		if cp, _ := core.AutoCheckpointIfDirty(ws, fmt.Sprintf("auto-save before switch to %s", name), "safety-guard"); cp != nil {
+			_ = index.IndexWorkspaceCheckpoint(ws, cp)
+		}
+
 		if err := core.SwitchBranch(ws, name); err != nil {
 			HandleError(err)
 		}

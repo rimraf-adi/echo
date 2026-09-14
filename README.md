@@ -57,6 +57,7 @@ make build
 ## Key Capabilities
 
 - ⚡ **Sub-Second Checkpoints**: Captures full-codebase state in $< 15\text{ms}$ with atomic file writes and automatic duplicate pruning.
+- 👁 **Automated Checkpoints & File Watcher**: Never lose uncommitted work. `echo watch` monitors the filesystem with configurable debouncing (default 1s), auto-saving agent write bursts into atomic checkpoints. Safety auto-checkpoints also guard branch switches, reverts, and merges.
 - 🌳 **Merkle Tree Directory Structure**: $O(\text{changes})$ diff algorithm prunes unchanged subtrees instantly without walking untouched files.
 - 📦 **Content-Addressable Storage**: SHA-256 blobs compressed with zlib level 6. Files smaller than 64 bytes or incompressible binaries are automatically kept raw.
 - 🔄 **Deterministic Rollbacks**: `echo revert <cp-id>` restores the exact file tree while keeping history append-only.
@@ -78,32 +79,35 @@ echo status
 # 3. Capture an agent bulk write with rich metadata
 echo checkpoint --agent "claude" --task "implement auth endpoints" --tag "auth" --tag "v1"
 
-# 4. Search file contents instantly across the codebase
+# 4. Or let Echo watch and auto-checkpoint whenever files change
+echo watch --debounce 1000 --agent "auto-agent"
+
+# 5. Search file contents instantly across the codebase
 echo search "def login" --context 2
 
-# 5. List all tracked files at any checkpoint
+# 6. List all tracked files at any checkpoint
 echo files --at HEAD
 
-# 6. View the visual directory tree
+# 7. View the visual directory tree
 echo tree
 
-# 7. Print content of any file at any historical checkpoint
+# 8. Print content of any file at any historical checkpoint
 echo cat src/services/auth.py --at HEAD~1
 
-# 8. Inspect unified Myers line diffs
+# 9. Inspect unified Myers line diffs
 echo diff HEAD~1 HEAD --stat
 
-# 9. Try an alternative approach in a branch
+# 10. Try an alternative approach in a branch
 echo branch experiment-oauth
 echo switch experiment-oauth
 
-# 10. Revert bad changes instantly
+# 11. Revert bad changes instantly
 echo revert HEAD
 
-# 11. Merge parallel branches
+# 12. Merge parallel branches
 echo merge experiment-oauth --strategy theirs
 
-# 12. Verify store integrity & clean unreferenced objects
+# 13. Verify store integrity & clean unreferenced objects
 echo verify
 echo gc
 ```
@@ -209,6 +213,7 @@ project/
 | `echo merge <branch>` | Perform 3-way merge with LCA detection and conflict policies |
 | `echo verify` | Cryptographically verify all blobs and trees against SHA-256 |
 | `echo gc` | Reclaim storage by purging unreferenced dangling objects |
+| `echo watch` | Watch workspace and automatically checkpoint when files change |
 
 ---
 

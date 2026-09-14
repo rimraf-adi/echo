@@ -592,6 +592,49 @@ Walks all checkpoint trees, identifies blobs and tree objects not referenced by 
 
 ---
 
+## `echo watch`
+
+Continuously monitor the workspace for filesystem changes and automatically create atomic checkpoints.
+
+```
+echo watch [--debounce <ms>] [--agent <name>]
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--debounce <ms>` | Quiet duration in milliseconds after file activity before checkpointing | `1000` |
+| `--agent <name>` | Agent identifier tag attached to auto-checkpoints | `"auto-watcher"` |
+
+**What it does:**
+1. Establishes recursive filesystem watchers on all workspace directories respecting `.echo/ignore`.
+2. Groups bursts of file creations, edits, and deletions (e.g. from agent bulk writes) using debouncing.
+3. Automatically triggers `AutoCheckpointIfDirty` and indexes the checkpoint into `index.db` once disk activity settles.
+4. Auto-saves any existing uncommitted changes immediately upon startup.
+
+**JSON output:**
+Streamed JSON event on each automated checkpoint:
+```json
+{
+  "event": "auto_checkpoint",
+  "checkpoint_id": "cp-20260914-101500-a1b2c3d4",
+  "tree_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "changeset": {
+    "added": ["src/service.py"],
+    "modified": ["README.md"],
+    "deleted": []
+  },
+  "stats": {
+    "total_files": 12,
+    "total_size_bytes": 10420,
+    "blobs_reused": 10,
+    "blobs_new": 2,
+    "duration_ms": 11
+  }
+}
+```
+
+---
+
 ## Shorthand Checkpoint References
 
 Throughout the CLI, checkpoint IDs can be referenced using shorthands:

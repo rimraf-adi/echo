@@ -7,7 +7,7 @@ all: build
 
 build:
 	@mkdir -p bin
-	go build $(LDFLAGS) -o bin/echo ./cmd/echo
+	go build -buildvcs=false $(LDFLAGS) -o bin/echo ./cmd/echo
 
 test:
 	go test ./... -v -race -count=1

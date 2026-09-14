@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/echo-vcs/echo/internal/core"
+	"github.com/echo-vcs/echo/internal/index"
 	"github.com/echo-vcs/echo/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -24,9 +25,22 @@ var revertCmd = &cobra.Command{
 		}
 
 		targetRef := args[0]
+		if !revertDryRun {
+			// Safety check: auto-save uncommitted changes before reverting
+			if cp, _ := core.AutoCheckpointIfDirty(ws, fmt.Sprintf("auto-save before revert to %s", targetRef), "safety-guard"); cp != nil {
+				_ = index.IndexWorkspaceCheckpoint(ws, cp)
+			}
+		}
+
 		res, err := core.Revert(ws, targetRef, revertDryRun, !revertNoCheckpoint)
 		if err != nil {
 			HandleError(err)
+		}
+
+		if res.RevertCheckpoint != "" {
+			if rcp, err := core.LoadCheckpoint(ws, res.RevertCheckpoint); err == nil {
+				_ = index.IndexWorkspaceCheckpoint(ws, rcp)
+			}
 		}
 
 		if FlagJSON {

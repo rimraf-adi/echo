@@ -2,12 +2,10 @@ package cli
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/echo-vcs/echo/internal/core"
 	"github.com/echo-vcs/echo/internal/index"
-	"github.com/echo-vcs/echo/internal/merkle"
 	"github.com/echo-vcs/echo/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -66,30 +64,7 @@ var checkpointCmd = &cobra.Command{
 		}
 
 		// Update SQLite index
-		dbPath := filepath.Join(ws.EchoDir, "index.db")
-		idx, err := index.OpenIndex(dbPath)
-		if err == nil {
-			_ = idx.IndexCheckpoint(cp)
-			treeData, rerr := ws.Store.ReadTree(cp.TreeHash)
-			if rerr == nil {
-				if treeNode, terr := merkle.DeserializeTree(treeData); terr == nil {
-					if files, ferr := merkle.FlattenTree(treeNode, ws.Store); ferr == nil {
-						_ = idx.IndexFiles(cp.ID, files)
-						// Update search index with changed/new files
-						for _, p := range append(cp.Changeset.Added, cp.Changeset.Modified...) {
-							if entry, ok := files[p]; ok {
-								if blob, berr := ws.Store.ReadBlob(entry.Hash); berr == nil {
-									_ = idx.IndexContent(cp.ID, p, string(blob))
-								}
-							}
-						}
-					}
-				}
-			}
-			headBranch, _ := core.ReadHead(ws)
-			_ = idx.SetRef(headBranch, cp.ID)
-			_ = idx.Close()
-		}
+		_ = index.IndexWorkspaceCheckpoint(ws, cp)
 
 		if FlagJSON {
 			output.PrintJSON(map[string]any{
