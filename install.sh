@@ -3,9 +3,18 @@ set -e
 
 REPO="rimraf-adi/echo"
 BIN_NAME="echo"
-INSTALL_DIR="${HOME}/.local/bin"
 
-# 1. Detect OS
+# 1. Choose installation target
+# If /usr/local/bin is writable, use it directly (already in standard PATH on all Unix/macOS)
+if [ -w "/usr/local/bin" ]; then
+    INSTALL_DIR="/usr/local/bin"
+    NEED_PATH_CONFIG=0
+else
+    INSTALL_DIR="${HOME}/.local/bin"
+    NEED_PATH_CONFIG=1
+fi
+
+# 2. Detect OS
 OS="$(uname -s)"
 case "$OS" in
     Darwin) OS="darwin" ;;
@@ -16,7 +25,7 @@ case "$OS" in
         ;;
 esac
 
-# 2. Detect Architecture
+# 3. Detect Architecture
 ARCH="$(uname -m)"
 case "$ARCH" in
     x86_64|amd64)   ARCH="amd64" ;;
@@ -27,7 +36,7 @@ case "$ARCH" in
         ;;
 esac
 
-# 3. Get latest release version tag
+# 4. Get latest release version tag
 echo "Detecting latest release for ${REPO}..."
 LATEST_TAG=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
@@ -60,29 +69,51 @@ chmod +x "${INSTALL_DIR}/${BIN_NAME}"
 
 echo "Installed ${BIN_NAME} to ${INSTALL_DIR}/${BIN_NAME}"
 
-# 4. Check PATH and configure shell profile if needed
-add_to_path() {
-    PROFILE_FILE="$1"
-    LINE_TO_ADD='export PATH="$HOME/.local/bin:$PATH"'
-    if [ -f "$PROFILE_FILE" ]; then
-        if ! grep -q "$LINE_TO_ADD" "$PROFILE_FILE"; then
-            echo "" >> "$PROFILE_FILE"
-            echo "# Echo VCS" >> "$PROFILE_FILE"
-            echo "$LINE_TO_ADD" >> "$PROFILE_FILE"
-            echo "Added ${INSTALL_DIR} to ${PROFILE_FILE}"
+# 5. Configure PATH if installed to user directory
+if [ "$NEED_PATH_CONFIG" -eq 1 ]; then
+    add_to_file() {
+        TARGET_FILE="$1"
+        LINE_TO_ADD="export PATH=\"${INSTALL_DIR}:\$PATH\""
+        
+        # Touch file if not present
+        mkdir -p "$(dirname "$TARGET_FILE")" 2>/dev/null || true
+        touch "$TARGET_FILE" 2>/dev/null || true
+        
+        if [ -f "$TARGET_FILE" ] && [ -w "$TARGET_FILE" ]; then
+            if ! grep -q "$INSTALL_DIR" "$TARGET_FILE"; then
+                echo "" >> "$TARGET_FILE"
+                echo "# Echo VCS binary path" >> "$TARGET_FILE"
+                echo "$LINE_TO_ADD" >> "$TARGET_FILE"
+                echo "Added ${INSTALL_DIR} to ${TARGET_FILE}"
+            fi
         fi
-    fi
-}
+    }
 
-case ":$PATH:" in
-    *":${INSTALL_DIR}:"*) ;;
-    *)
-        add_to_path "$HOME/.zshrc"
-        add_to_path "$HOME/.bashrc"
-        add_to_path "$HOME/.profile"
-        export PATH="$INSTALL_DIR:$PATH"
-        ;;
-esac
+    case ":$PATH:" in
+        *":${INSTALL_DIR}:"*) ;;
+        *)
+            # Configure standard shell profiles
+            add_to_file "$HOME/.zshrc"
+            add_to_file "$HOME/.bashrc"
+            add_to_file "$HOME/.bash_profile"
+            add_to_file "$HOME/.profile"
+
+            # Support fish shell if directory exists
+            if [ -d "$HOME/.config/fish" ]; then
+                FISH_CONF="$HOME/.config/fish/config.fish"
+                FISH_LINE="set -gx PATH \$PATH $INSTALL_DIR"
+                touch "$FISH_CONF" 2>/dev/null || true
+                if [ -f "$FISH_CONF" ] && ! grep -q "$INSTALL_DIR" "$FISH_CONF"; then
+                    echo "" >> "$FISH_CONF"
+                    echo "$FISH_LINE" >> "$FISH_CONF"
+                    echo "Added ${INSTALL_DIR} to ${FISH_CONF}"
+                fi
+            fi
+
+            export PATH="$INSTALL_DIR:$PATH"
+            ;;
+    esac
+fi
 
 echo ""
 echo "Echo installation complete!"
