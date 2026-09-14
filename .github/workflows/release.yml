@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: darwin
+            arch: arm64
+            ext: tar.gz
+            bin: echo
+          - os: darwin
+            arch: amd64
+            ext: tar.gz
+            bin: echo
+          - os: linux
+            arch: amd64
+            ext: tar.gz
+            bin: echo
+          - os: linux
+            arch: arm64
+            ext: tar.gz
+            bin: echo
+          - os: windows
+            arch: amd64
+            ext: zip
+            bin: echo.exe
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: 0
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          mkdir -p dist
+          go build -ldflags "-s -w -X main.version=$VERSION" -o dist/${{ matrix.bin }} ./cmd/echo
+
+      - name: Package archive
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          ARCHIVE_NAME="echo-${VERSION}-${{ matrix.os }}-${{ matrix.arch }}"
+          cd dist
+          if [ "${{ matrix.ext }}" = "zip" ]; then
+            zip "${ARCHIVE_NAME}.zip" ${{ matrix.bin }}
+          else
+            tar -czvf "${ARCHIVE_NAME}.tar.gz" ${{ matrix.bin }}
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*.${{ matrix.ext }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-artifacts/*
+          generate_release_notes: true
