@@ -1,45 +1,47 @@
-# Echo 🏛️
+# Echo
 
 **Fast, lightweight, content-verified codebase state tracker for AI agents.**
 
 [![Go Version](https://img.shields.io/badge/go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Pure Go](https://img.shields.io/badge/Pure%20Go-Zero%20CGo-blue)](#architecture)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Pure Go](https://img.shields.io/badge/Pure%20Go-Zero%20CGo-blue)](#architecture--storage-model)
 
-Echo is a dedicated codebase state machine and history DAG purpose-built for AI agent workflows. It provides zero-friction automatic checkpointing, Merkle tree content verification, zlib-compressed blob deduplication, and deterministic rollback — completely independent of git.
-
----
-
-## Why Echo?
-
-Agents do not use version control the way humans do. While humans stage individual hunks and write prose commit messages, **agents bulk-write 10 to 50 files simultaneously**. 
-
-When an agent breaks code in a bulk mutation, recovery with traditional tools is painful:
-- Git requires manual staging, commit ceremony, and human conflict resolution.
-- Git diffs become slow and noisy on massive multi-file modifications.
-- Standard tools lack structured JSON outputs and indexed full-text content querying out of the box.
-
-Echo solves this by acting as an immutable state capture layer running alongside git (or standalone) with sub-second checkpointing, Merkle-accelerated diffing, and true one-command rollbacks.
+Echo is a dedicated codebase state tracker and history DAG designed specifically for autonomous AI agent workflows. It provides automatic checkpointing, Merkle tree content verification, content-addressable zlib-compressed blob storage, full-text indexing, and deterministic rollbacks — completely independent of Git.
 
 ---
 
-## ⚡ 1-Line Installation
+## Motivation
 
-Echo automatically detects your OS and CPU architecture, installs the static binary, and permanently configures your `PATH` environment variable.
+Autonomous coding agents interact with codebases fundamentally differently than human developers. While humans incrementally stage changes and write prose commit messages, agents execute rapid bulk modifications spanning dozens of files simultaneously.
 
-### macOS & Linux
+When an automated modification introduces regressions, traditional version control presents several friction points:
+- Manual staging and commit ceremony disrupt autonomous agent execution loops.
+- Standard diff utilities incur performance overhead on large-scale file modifications.
+- Existing tools lack structured, machine-readable JSON outputs and integrated content indexing out of the box.
+
+Echo addresses these limitations by providing an immutable state capture layer that operates alongside Git (or standalone) with sub-second checkpoint creation, Merkle-accelerated diffing, and single-command rollbacks.
+
+---
+
+## Installation
+
+### Automated Installer
+
+Echo provides automated installation scripts that detect the host operating system and CPU architecture, place the static binary in a standard binary path, and configure the user's `PATH` environment variable.
+
+#### macOS and Linux
 ```bash
 curl -fsSL https://raw.githubusercontent.com/rimraf-adi/echo/main/install.sh | sh
 ```
-*Installs to `/usr/local/bin` (if writable) or `~/.local/bin`, and automatically adds it to `~/.zshrc`, `~/.bashrc`, or `~/.config/fish/config.fish`.*
+*Installs to `/usr/local/bin` (or `~/.local/bin`), configuring `~/.zshrc`, `~/.bashrc`, or `~/.config/fish/config.fish` automatically.*
 
-### Windows (PowerShell)
+#### Windows (PowerShell)
 ```powershell
 irm https://raw.githubusercontent.com/rimraf-adi/echo/main/install.ps1 | iex
 ```
-*Installs to `%LOCALAPPDATA%\echo\bin`, permanently registers it in the Windows Registry User `PATH`, and makes it available immediately in the current session.*
+*Installs to `%LOCALAPPDATA%\echo\bin`, persists to the Windows Registry User `PATH`, and activates in the current session.*
 
-### Via Go
+### Via Go Toolchain
 ```bash
 go install github.com/rimraf-adi/echo/cmd/echo@latest
 ```
@@ -49,77 +51,77 @@ go install github.com/rimraf-adi/echo/cmd/echo@latest
 git clone https://github.com/rimraf-adi/echo.git
 cd echo
 make build
-# Binary is built at bin/echo
+# Binary output is placed at bin/echo
 ```
 
 ---
 
 ## Key Capabilities
 
-- ⚡ **Sub-Second Checkpoints**: Captures full-codebase state in $< 15\text{ms}$ with atomic file writes and automatic duplicate pruning.
-- 👁 **Automated Checkpoints & File Watcher**: Never lose uncommitted work. `echo watch` monitors the filesystem with configurable debouncing (default 1s), auto-saving agent write bursts into atomic checkpoints. Safety auto-checkpoints also guard branch switches, reverts, and merges.
-- 🌳 **Merkle Tree Directory Structure**: $O(\text{changes})$ diff algorithm prunes unchanged subtrees instantly without walking untouched files.
-- 📦 **Content-Addressable Storage**: SHA-256 blobs compressed with zlib level 6. Files smaller than 64 bytes or incompressible binaries are automatically kept raw.
-- 🔄 **Deterministic Rollbacks**: `echo revert <cp-id>` restores the exact file tree while keeping history append-only.
-- 🌿 **Branch Isolation & 3-Way Merge**: Isolated branches for agents exploring alternative approaches, with Lowest Common Ancestor (LCA) detection and automated conflict resolution (`theirs` / `ours`).
-- 🔍 **Pure Go SQLite Index & FTS5**: Built with `modernc.org/sqlite` (no CGo compiler required) with indexed full-text search across all tracked code.
-- 🤖 **Agent First (`--json`)**: Every CLI command supports `--json` (`-j`) for zero-parsing programmatic orchestration.
+- **Sub-Second Checkpoints**: Captures full-codebase state in less than 15ms with atomic file operations and automatic deduplication.
+- **Automated Checkpoints and File Watcher**: `echo watch` monitors the filesystem with configurable debouncing (default: 1000ms), committing agent write bursts into atomic checkpoints. Safety auto-checkpoints safeguard branch switches, reverts, and merges against uncommitted data loss.
+- **Merkle Tree Directory Structure**: Merkle diffing prunes unchanged subtrees in O(changes) time without inspecting untouched directories.
+- **Content-Addressable Storage**: SHA-256 blobs compressed with zlib (level 6). Files smaller than 64 bytes or incompressible binary streams are retained uncompressed.
+- **Deterministic Rollbacks**: `echo revert <cp-id>` restores the working tree to any historical checkpoint state while keeping history append-only.
+- **Branch Isolation and Three-Way Merge**: Independent branches for parallel tasks, featuring Lowest Common Ancestor (LCA) graph traversal and deterministic conflict resolution policies (`theirs` and `ours`).
+- **Pure Go SQLite Index (FTS5)**: Embedded database powered by `modernc.org/sqlite` (no CGo required), providing full-text search across all tracked code.
+- **Agent-First Programmatic Interface**: Every command supports `--json` (`-j`) for zero-parsing programmatic orchestration.
 
 ---
 
-## Quick Start Walkthrough
+## Quick Start
 
 ```bash
-# 1. Initialize tracking in any project
+# 1. Initialize tracking in a project directory
 echo init
 
-# 2. Check current branch, HEAD, and uncommitted changes
+# 2. Inspect active branch, HEAD checkpoint, and modified files
 echo status
 
-# 3. Capture an agent bulk write with rich metadata
-echo checkpoint --agent "claude" --task "implement auth endpoints" --tag "auth" --tag "v1"
+# 3. Snapshot state manually with agent metadata
+echo checkpoint --agent "claude" --task "implement auth endpoints" --tag "auth"
 
-# 4. Or let Echo watch and auto-checkpoint whenever files change
-echo watch --debounce 1000 --agent "auto-agent"
+# 4. Alternatively, launch the automated watcher to capture changes in background
+echo watch --debounce 1000 --agent "auto-worker"
 
-# 5. Search file contents instantly across the codebase
+# 5. Search file contents across the codebase via FTS5
 echo search "def login" --context 2
 
-# 6. List all tracked files at any checkpoint
+# 6. List tracked files at the current or historical checkpoint
 echo files --at HEAD
 
-# 7. View the visual directory tree
+# 7. Render hierarchical directory structure
 echo tree
 
-# 8. Print content of any file at any historical checkpoint
+# 8. Print file contents at a specific historical checkpoint
 echo cat src/services/auth.py --at HEAD~1
 
-# 9. Inspect unified Myers line diffs
+# 9. Compute line-level unified diffs
 echo diff HEAD~1 HEAD --stat
 
-# 10. Try an alternative approach in a branch
-echo branch experiment-oauth
-echo switch experiment-oauth
+# 10. Create and switch to an isolated branch
+echo branch feature-oauth
+echo switch feature-oauth
 
-# 11. Revert bad changes instantly
-echo revert HEAD
+# 11. Revert workspace to an earlier checkpoint state
+echo revert HEAD~1
 
-# 12. Merge parallel branches
-echo merge experiment-oauth --strategy theirs
+# 12. Merge a feature branch with a specified conflict strategy
+echo merge feature-oauth --strategy theirs
 
-# 13. Verify store integrity & clean unreferenced objects
+# 13. Verify cryptographic store integrity and purge unreferenced objects
 echo verify
 echo gc
 ```
 
 ---
 
-## Machine-Readable JSON Mode
+## Programmatic Usage (JSON Mode)
 
-Every command outputs structured JSON when invoked with `-j` or `--json`:
+Echo commands accept `--json` (or `-j`) to produce structured output on `stdout`:
 
 ```bash
-# Example: programmatic checkpoint
+# Example: creating a checkpoint programmatically
 echo checkpoint --agent "agent-1" --task "add routes" --json
 ```
 
@@ -144,7 +146,7 @@ echo checkpoint --agent "agent-1" --task "add routes" --json
 ```
 
 ```bash
-# Example: full-text search output for agents
+# Example: full-text search
 echo search "def register" --json
 ```
 
@@ -172,20 +174,20 @@ echo search "def register" --json
 ```
 project/
 ├── .echo/
-│   ├── config.json                # Workspace configuration
+│   ├── config.json                # Workspace configuration and defaults
 │   ├── HEAD                       # Current branch reference
 │   ├── refs/                      # Branch pointers
-│   │   ├── main                   # -> checkpoint ID
-│   │   └── experiment-a           # -> checkpoint ID
-│   ├── objects/                   # 2-character sharded object store
+│   │   ├── main                   # Latest checkpoint ID on main
+│   │   └── feature-a              # Latest checkpoint ID on feature-a
+│   ├── objects/                   # Sharded content-addressable storage
 │   │   ├── ab/
-│   │   │   └── cdef1234...        # 48-byte header + zlib compressed payload
+│   │   │   └── cdef1234...        # 48-byte binary header + zlib payload
 │   │   └── ...
 │   ├── checkpoints/               # Immutable JSON checkpoint manifests
 │   │   ├── cp-20260914-...json
 │   │   └── ...
-│   ├── index.db                   # Pure Go SQLite database (WAL mode, FTS5)
-│   ├── ignore                     # Custom ignore rules (default: .echo, .git)
+│   ├── index.db                   # Embedded SQLite index (WAL mode, FTS5)
+│   ├── ignore                     # Workspace ignore patterns (default: .echo, .git)
 │   └── lock                       # Atomic write lockfile with stale PID detection
 └── ... (tracked project files)
 ```
@@ -196,47 +198,50 @@ project/
 
 | Command | Description |
 |---|---|
-| `echo init` | Initialize Echo tracking in the directory |
-| `echo status` | Display branch, HEAD checkpoint, and uncheckpointed deltas |
-| `echo checkpoint` | Atomically snapshot working directory with agent metadata |
-| `echo log` | Show chronological history DAG and changesets |
-| `echo diff [a] [b]` | Compute line-level unified diffs with hunks |
-| `echo show <cp-id>` | Display detailed metadata and file breakdown for a checkpoint |
-| `echo files` | List tracked files, file sizes, and modes |
-| `echo cat <path>` | Output raw content of any file at any historical state |
-| `echo search <query>` | FTS5 full-text search with line numbers and context |
-| `echo tree` | Render directory hierarchy with file counts and byte sizes |
-| `echo revert <cp-id>` | Rollback files to match any historical checkpoint state |
+| `echo init` | Initialize Echo tracking within the target directory |
+| `echo status` | Display active branch, HEAD checkpoint, and uncommitted modifications |
+| `echo checkpoint` | Atomically capture the working directory with agent metadata |
+| `echo log` | Display chronological checkpoint history DAG and changesets |
+| `echo diff [a] [b]` | Compute line-level unified diffs with context hunks |
+| `echo show <cp-id>` | Display metadata and file breakdowns for a specific checkpoint |
+| `echo files` | List tracked files, sizes, modes, and cryptographic hashes |
+| `echo cat <path>` | Output raw contents of a file at any historical checkpoint |
+| `echo search <query>` | Execute full-text FTS5 search with matching lines and context |
+| `echo tree` | Render directory hierarchy with file counts and storage metrics |
+| `echo revert <cp-id>` | Rollback working directory to match any historical checkpoint state |
 | `echo branch <name>` | Create a new isolated branch |
-| `echo switch <name>` | Switch active branch and update working directory |
-| `echo branches` | List all branches and active branch indicator |
-| `echo merge <branch>` | Perform 3-way merge with LCA detection and conflict policies |
-| `echo verify` | Cryptographically verify all blobs and trees against SHA-256 |
-| `echo gc` | Reclaim storage by purging unreferenced dangling objects |
-| `echo watch` | Watch workspace and automatically checkpoint when files change |
+| `echo switch <name>` | Switch active branch and synchronize the working tree |
+| `echo branches` | List all existing branches with active branch indicator |
+| `echo merge <branch>` | Perform three-way merge with LCA detection and conflict resolution |
+| `echo verify` | Cryptographically verify all stored objects against their SHA-256 digests |
+| `echo gc` | Reclaim disk space by purging unreferenced dangling objects |
+| `echo watch` | Monitor workspace continuously and auto-checkpoint on settled file activity |
 
 ---
 
-## Comprehensive Specifications
+## Documentation
 
-Detailed architectural designs, formal PRDs, and testing documents are located in [`docs/`](docs/):
+Detailed architectural designs, formal specifications, and testing strategies are maintained in the [`docs/`](docs/) directory:
+
 - [`01-prd.md`](docs/01-prd.md): Product Requirements Document
-- [`02-architecture.md`](docs/02-architecture.md): Object Model, Binary Format, & SQLite Schema
-- [`03-cli-spec.md`](docs/03-cli-spec.md): CLI Command Specifications & Flags
-- [`04-project-structure.md`](docs/04-project-structure.md): Package Layout & Responsibilities
-- [`05-implementation-guide.md`](docs/05-implementation-guide.md): Step-by-step phased engineering guide
-- [`06-testing-strategy.md`](docs/06-testing-strategy.md): Test Matrix & Validation Strategy
+- [`02-architecture.md`](docs/02-architecture.md): Object Model, Binary Format, and SQLite Schema
+- [`03-cli-spec.md`](docs/03-cli-spec.md): CLI Command Specifications and Flag Definitions
+- [`04-project-structure.md`](docs/04-project-structure.md): Package Layout and Architecture Boundaries
+- [`05-implementation-guide.md`](docs/05-implementation-guide.md): Step-by-Step Implementation Guide
+- [`06-testing-strategy.md`](docs/06-testing-strategy.md): Test Matrix and Verification Methodology
 
 ---
 
-## Contributing & Testing
+## Development & Testing
 
-Run all unit and integration tests with Go's race detector:
+Execute unit and integration tests with Go's race detector enabled:
 
 ```bash
 make test
 ```
 
+---
+
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
