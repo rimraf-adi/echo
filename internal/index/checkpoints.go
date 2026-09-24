@@ -1,6 +1,7 @@
 package index
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/echo-vcs/echo/internal/core"
+	"github.com/echo-vcs/echo/internal/indexer"
 	"github.com/echo-vcs/echo/internal/merkle"
 )
 
@@ -178,6 +180,11 @@ func IndexWorkspaceCheckpoint(ws *core.Workspace, cp *core.Checkpoint) error {
 
 	_ = idx.IndexCheckpoint(cp)
 	treeData, rerr := ws.Store.ReadTree(cp.TreeHash)
+	
+	// Create semantic indexer
+	semIndexer := indexer.NewIndexer()
+	ctx := context.Background()
+
 	if rerr == nil {
 		if treeNode, terr := merkle.DeserializeTree(treeData); terr == nil {
 			if files, ferr := merkle.FlattenTree(treeNode, ws.Store); ferr == nil {
@@ -186,6 +193,12 @@ func IndexWorkspaceCheckpoint(ws *core.Workspace, cp *core.Checkpoint) error {
 					if entry, ok := files[p]; ok {
 						if blob, berr := ws.Store.ReadBlob(entry.Hash); berr == nil {
 							_ = idx.IndexContent(cp.ID, p, string(blob))
+							
+							// AST Parsing and Semantic Edge tracking
+							symbols, edges, err := semIndexer.ParseContent(ctx, p, blob)
+							if err == nil && len(symbols) > 0 {
+								_ = idx.IndexSymbols(ctx, cp.ID, p, symbols, edges)
+							}
 						}
 					}
 				}

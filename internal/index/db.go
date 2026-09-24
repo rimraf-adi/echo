@@ -90,11 +90,33 @@ func (idx *Index) migrate() error {
 		checkpoint_id UNINDEXED
 	);
 
+	CREATE TABLE IF NOT EXISTS symbols (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		checkpoint_id TEXT NOT NULL,
+		path          TEXT NOT NULL,
+		name          TEXT NOT NULL,
+		type          TEXT NOT NULL,
+		start_line    INTEGER NOT NULL,
+		end_line      INTEGER NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS edges (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		checkpoint_id TEXT NOT NULL,
+		source_sym_id INTEGER NOT NULL,
+		target_sym_id INTEGER,
+		target_path   TEXT,
+		type          TEXT NOT NULL
+	);
+
 	CREATE INDEX IF NOT EXISTS idx_files_path ON files(path);
 	CREATE INDEX IF NOT EXISTS idx_files_blob ON files(blob_hash);
 	CREATE INDEX IF NOT EXISTS idx_checkpoints_agent ON checkpoints(agent);
 	CREATE INDEX IF NOT EXISTS idx_checkpoints_task ON checkpoints(task);
 	CREATE INDEX IF NOT EXISTS idx_checkpoints_created ON checkpoints(created_at);
+	CREATE INDEX IF NOT EXISTS idx_symbols_checkpoint_path ON symbols(checkpoint_id, path);
+	CREATE INDEX IF NOT EXISTS idx_symbols_name ON symbols(name);
+	CREATE INDEX IF NOT EXISTS idx_edges_source ON edges(source_sym_id);
 	`
 
 	_, err := idx.db.Exec(schema)
