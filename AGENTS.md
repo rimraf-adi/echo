@@ -1,12 +1,12 @@
-# Echo Agent Integration Specification (AGENTS.md)
+# ATCG Agent Integration Specification (AGENTS.md)
 
-This specification defines instructions and operational contracts for autonomous AI coding agents (e.g. Claude Code, OpenAI Operator, Devin, Cursor, Gemini, and custom agent harnesses) to install, configure, and operate Echo programmatically within any execution environment.
+This specification defines instructions and operational contracts for autonomous AI coding agents (e.g. Claude Code, OpenAI Operator, Devin, Cursor, Gemini, and custom agent harnesses) to install, configure, and operate the Agent-Native Temporal Code Graph (ATCG) programmatically within any execution environment.
 
 ---
 
 ## 1. System Overview
 
-Echo is a headless, content-addressable codebase state tracker and history DAG. It operates independently of Git and provides:
+ATCG (formerly Echo) is a headless, content-addressable codebase state tracker and history DAG with semantic Tree-sitter AST indexing. It operates independently of Git and provides:
 - Atomic sub-second checkpoints (< 15ms) across bulk multi-file edits.
 - Cryptographic Merkle tree verification and zlib blob deduplication.
 - Pure Go embedded SQLite database with Full-Text Search (FTS5).
@@ -163,6 +163,16 @@ Fetch raw content of any file from any previous checkpoint:
 ```bash
 echo cat src/api/auth.py --at HEAD~1
 ```
+
+#### 4. Semantic Graph Queries (MCP Server)
+ATCG incrementally builds an AST-based semantic graph using Tree-sitter. Agents can run the Model Context Protocol (MCP) server over `stdio` to issue semantic queries.
+```bash
+# Launch MCP JSON-RPC Server
+echo mcp
+```
+The server exposes tools directly tailored for agents:
+- `find_symbol`: Search for the AST boundaries of any function or class (`{ "name": "AuthService" }`).
+- `history`: View how a specific symbol mutated across checkpoints over time.
 
 ### Phase 4: Speculative Branching & Parallel Exploration
 

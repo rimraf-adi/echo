@@ -64,6 +64,41 @@ echo checkpoint --agent "claude" --task "implement auth endpoints" --tag "auth"
 echo search "def login" --context 2
 ```
 
+### Agent-Native Features (Tier 1 MCP)
+
+ATCG embeds a Model Context Protocol (MCP) server that agents can invoke to semantically query the temporal graph.
+
+```bash
+# Start the MCP server over stdio
+echo mcp
+```
+
+**Available MCP Tools:**
+- `find_symbol`: Locate a function or class across the temporal graph.
+- `history`: Get the temporal history (previous checkpoints) for a specific symbol.
+
+*(More tools like `get_dependencies` and `impact` are under active development).*
+
+---
+
+## Command Reference
+
+| Command | Description |
+|---|---|
+| `echo init` | Initialize tracking within the target directory |
+| `echo status` | Display active branch, HEAD checkpoint, and modifications |
+| `echo checkpoint` | Atomically capture the working directory with agent metadata |
+| `echo log` | Display chronological checkpoint history DAG |
+| `echo diff [a] [b]` | Compute line-level unified diffs |
+| `echo show <cp-id>` | Display metadata and files for a checkpoint |
+| `echo files` | List tracked files and cryptographic hashes |
+| `echo cat <path>` | Output raw contents of a file at any historical checkpoint |
+| `echo search <query>` | Execute full-text FTS5 search |
+| `echo mcp` | **Start the JSON-RPC Model Context Protocol (MCP) server** |
+| `echo tree` | Render directory hierarchy |
+| `echo revert <cp-id>` | Rollback working directory to match historical state |
+| `echo watch` | Monitor workspace continuously and auto-checkpoint |
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
