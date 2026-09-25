@@ -1,4 +1,4 @@
-# Agent-Native Temporal Code Graph (formerly Echo)
+# Echo: Agent-Native Temporal Code Graph
 
 **Fast, lightweight, content-verified codebase state tracker and temporal graph for AI agents.**
 
@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Pure Go](https://img.shields.io/badge/Pure%20Go-Zero%20CGo-blue)](#architecture--storage-model)
 
-The Agent-Native Temporal Code Graph (ATCG) is a local-first, headless service that gives coding agents fast, structured answers about code structure **and** history. It is designed to capture history at the agent's own write granularity (independent of git) and record intent at write time.
+Echo is a local-first, headless service that gives coding agents fast, structured answers about code structure **and** history. It is designed to capture history at the agent's own write granularity (independent of git) and record intent at write time.
 
 > **AI Agent Specification**: Refer to [AGENTS.md](AGENTS.md) for machine installation instructions, non-interactive execution loops, and programmatic JSON contracts for autonomous agents.
 
@@ -18,7 +18,7 @@ Coding agents start every task from zero. They re-read files, guess at dependenc
 
 ## Our Solution
 
-ATCG provides:
+Echo provides:
 1. Fast structured answers about code structure **and** history.
 2. History captured at the agent's own write granularity, **independent of git**.
 3. Intent recorded at write time, not mined afterward.
@@ -32,7 +32,7 @@ While human queries are possible via the CLI, the system is fundamentally optimi
 
 ## Core Architecture
 
-ATCG builds upon the proven architecture of Echo:
+Echo includes:
 - **Local-first SQLite + Blob Store**: Pure Go embedded database powered by `modernc.org/sqlite` and zlib-compressed content-addressed blobs.
 - **Append-only Step Ledger**: A cryptographically verifiable DAG tracking File, Symbol, Module, and Test edges.
 - **Multi-resolution History**: Epoch, Task, and Step resolutions.
@@ -66,7 +66,7 @@ echo search "def login" --context 2
 
 ### Agent-Native Features (Tier 1 MCP)
 
-ATCG embeds a Model Context Protocol (MCP) server that agents can invoke to semantically query the temporal graph.
+Echo embeds a Model Context Protocol (MCP) server that agents can invoke to semantically query the temporal graph.
 
 ```bash
 # Start the MCP server over stdio
