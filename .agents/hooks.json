@@ -1,12 +1,21 @@
 {
-  "hooks": {
-    "PostInvocation": {
-      "command": "/Users/adityakinjawadekar/Documents/100xcode/git-clone/scripts/hook-logger.sh",
-      "args": ["PostInvocation"]
-    },
-    "PostToolUse": {
-      "command": "/Users/adityakinjawadekar/Documents/100xcode/git-clone/scripts/hook-logger.sh",
-      "args": ["PostToolUse"]
-    }
+  "echo-logger": {
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "../scripts/hook-logger.sh PostInvocation"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "../scripts/hook-logger.sh PostToolUse"
+          }
+        ]
+      }
+    ]
   }
 }
