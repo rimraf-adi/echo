@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PostInvocation": {
+      "command": "/Users/adityakinjawadekar/Documents/100xcode/git-clone/scripts/hook-logger.sh",
+      "args": ["PostInvocation"]
+    },
+    "PostToolUse": {
+      "command": "/Users/adityakinjawadekar/Documents/100xcode/git-clone/scripts/hook-logger.sh",
+      "args": ["PostToolUse"]
+    }
+  }
+}
